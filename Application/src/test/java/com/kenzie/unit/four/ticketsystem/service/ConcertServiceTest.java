@@ -108,7 +108,29 @@ public class ConcertServiceTest {
         Assertions.assertEquals(record.getTicketBasePrice(), concert.getTicketBasePrice(), "The concert ticket price matches");
         Assertions.assertEquals(record.getReservationClosed(), concert.getReservationClosed(), "The concert reservation closed flag matches");
     }
+    @Test
+    void findByConcertId_nullId_returnsNull() {
+        // GIVEN
+        String concertId = randomUUID().toString();
 
+        Concert record = new Concert(
+        concertId,
+        "concertname",
+        "recorddate",
+        10.0,
+        true);
+        when(cacheStore.get(concertId)).thenReturn(record);
+        // WHEN
+        Concert concert = concertService.findByConcertId(concertId);
+
+        // THEN
+        Assertions.assertNotNull(concert, "The concert is returned");
+        Assertions.assertEquals(record.getId(), concert.getId(), "The concert id matches");
+        Assertions.assertEquals(record.getName(), concert.getName(), "The concert name matches");
+        Assertions.assertEquals(record.getDate(), concert.getDate(), "The concert date matches");
+        Assertions.assertEquals(record.getTicketBasePrice(), concert.getTicketBasePrice(), "The concert ticket price matches");
+        Assertions.assertEquals(record.getReservationClosed(), concert.getReservationClosed(), "The concert reservation closed flag matches");
+    }
     /** ------------------------------------------------------------------------
      *  concertService.addNewConcert
      *  ------------------------------------------------------------------------ **/

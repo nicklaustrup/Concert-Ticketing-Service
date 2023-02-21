@@ -96,8 +96,53 @@ public class ReservedTicketServiceTest {
     /** ------------------------------------------------------------------------
      *  reservedTicketService.findAllUnclosedReservationTickets
      *  ------------------------------------------------------------------------ **/
+    @Test
+    void findAllUnclosedReservationTickets() {
+        // GIVEN
+        ReserveTicketRecord record1 = new ReserveTicketRecord();
+        record1.setTicketId(randomUUID().toString());
+        record1.setConcertId(randomUUID().toString());
+        record1.setDateOfReservation("record1date");
+        record1.setDateReservationClosed("closed1date");
+        record1.setReservationClosed(false);
+        record1.setPurchasedTicket(false);
 
-    // Write additional tests here
+        ReserveTicketRecord record2 = new ReserveTicketRecord();
+        record2.setTicketId(randomUUID().toString());
+        record2.setConcertId(randomUUID().toString());
+        record2.setDateOfReservation("record2date");
+        record2.setDateReservationClosed("closed2date");
+        record2.setReservationClosed(true);
+        record2.setPurchasedTicket(false);
+
+        List<ReserveTicketRecord> records = new ArrayList<>();
+
+        records.add(record1);
+        records.add(record2);
+
+//        when(reservedTicketService.findAllReservationTickets()).thenReturn();
+        when(reservedTicketRepository.findAll()).thenReturn(records);
+        // WHEN
+
+        List<ReservedTicket> reservations = reservedTicketService.findAllUnclosedReservationTickets();
+
+        // THEN
+        Assertions.assertNotNull(reservations, "The reserved ticket list is returned");
+        Assertions.assertEquals(1, reservations.size(), "There are two reserved tickets");
+
+        for (ReservedTicket ticket : reservations) {
+            if (ticket.getTicketId() == record1.getTicketId()) {
+                Assertions.assertEquals(record1.getConcertId(), ticket.getConcertId(), "The concert id matches");
+                Assertions.assertEquals(record1.getDateOfReservation(), ticket.getDateOfReservation(), "The reservation date matches");
+                Assertions.assertEquals(record1.getReservationClosed(), ticket.getReservationClosed(), "The reservationClosed matches");
+                Assertions.assertEquals(record1.getPurchasedTicket(), ticket.getTicketPurchased(), "The ticketPurchased matches");
+                Assertions.assertEquals(record1.getDateReservationClosed(), ticket.getDateReservationClosed(), "The reservation closed date matches");
+            }  else {
+                Assertions.assertTrue(false, "Reserved Ticket returned that was not in the records!");
+            }
+        }
+    }
+
 
     /** ------------------------------------------------------------------------
      *  reservedTicketService.reserveTicket

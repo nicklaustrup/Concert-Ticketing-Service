@@ -39,21 +39,6 @@ public class ConcertService {
     }
 
     public Concert findByConcertId(String concertId) {
-                   /* OLD LOGIC */
-//
-//        Optional<ConcertRecord> optionalRecord = concertRepository.findById(concertId);
-//
-//        if (optionalRecord.isPresent()) {
-//            ConcertRecord record = optionalRecord.get();
-//            return new Concert(record.getId(),
-//                    record.getName(),
-//                    record.getDate(),
-//                    record.getTicketBasePrice(),
-//                    record.getReservationClosed());
-//        } else {
-//            return null;
-//        }
-
                /*     LOGIC FROM TASK 6     */
 
         Concert cachedConcert = cache.get(concertId);
