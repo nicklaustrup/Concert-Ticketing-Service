@@ -4,6 +4,7 @@ import com.kenzie.unit.four.ticketsystem.config.CacheStore;
 import com.kenzie.unit.four.ticketsystem.repositories.ConcertRepository;
 import com.kenzie.unit.four.ticketsystem.repositories.model.ConcertRecord;
 import com.kenzie.unit.four.ticketsystem.service.model.Concert;
+import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,9 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.util.UUID.randomUUID;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class ConcertServiceTest {
     private ConcertRepository concertRepository;
@@ -145,12 +144,63 @@ public class ConcertServiceTest {
      *  concertService.updateConcert
      *  ------------------------------------------------------------------------ **/
 
-    // Write additional tests here
+    @Test
+    void updateConcert() {
+        // GIVEN
+        String concertId = randomUUID().toString();
+        Concert originalConcert = new Concert(randomUUID().toString(), "concertname", "recorddate", 10.0, false);
+        Concert updatedConcert = new Concert(concertId, "updatedConcert", "todaysDate", 11.0, false);
+
+        ArgumentCaptor<ConcertRecord> concertRecordCaptor = ArgumentCaptor.forClass(ConcertRecord.class);
+
+        // WHEN
+        when(concertRepository.existsById(any())).thenReturn(true);
+
+        concertService.addNewConcert(originalConcert);
+        concertService.updateConcert(updatedConcert);
+
+        verify(concertRepository, times(2)).save(concertRecordCaptor.capture());
+        //Save both concertRepository saves to a list of captors
+        List<ConcertRecord> record = concertRecordCaptor.getAllValues();
+
+        //return second call to concert repository
+        when(concertRepository.findById(updatedConcert.getId())).thenReturn(Optional.of(record.get(1)));
+        //perform concert lookup based on saved captor
+        Concert actualConcert = concertService.findByConcertId(record.get(1).getId());
+
+        // THEN
+        Assertions.assertNotNull(actualConcert);
+        Assertions.assertNotNull(record.get(1), "The concert record is returned");
+        Assertions.assertEquals(record.get(1).getId(), actualConcert.getId(), "The concert id matches");
+        Assertions.assertEquals(record.get(1).getName(), actualConcert.getName(), "The concert name matches");
+        Assertions.assertEquals(record.get(1).getDate(), actualConcert.getDate(), "The concert date matches");
+        Assertions.assertEquals(record.get(1).getTicketBasePrice(), actualConcert.getTicketBasePrice(), "The concert ticket price matches");
+        Assertions.assertEquals(record.get(1).getReservationClosed(), actualConcert.getReservationClosed(), "The concert reservation closed flag matches");
+    }
 
     /** ------------------------------------------------------------------------
      *  concertService.deleteConcert
      *  ------------------------------------------------------------------------ **/
 
-    // Write additional tests here
+    @Test
+    void deleteConcert() {
+        // GIVEN
+        String concertId = randomUUID().toString();
+        Concert concert = new Concert(concertId, "concertname", "recorddate", 10.0, false);
+        ArgumentCaptor<ConcertRecord> concertRecordCaptor = ArgumentCaptor.forClass(ConcertRecord.class);
+
+        // WHEN
+        Concert returnedConcert = concertService.addNewConcert(concert);
+
+        // THEN
+        Assertions.assertNotNull(returnedConcert);
+        verify(concertRepository).save(concertRecordCaptor.capture());
+
+
+        //DELETE
+        concertService.deleteConcert(concertId);
+
+        verify(concertRepository).deleteById(concertId);
+    }
 
 }

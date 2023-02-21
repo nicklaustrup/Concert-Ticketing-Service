@@ -4,7 +4,9 @@ import com.kenzie.unit.four.ticketsystem.repositories.ReservedTicketRepository;
 import com.kenzie.unit.four.ticketsystem.repositories.model.ReserveTicketRecord;
 import com.kenzie.unit.four.ticketsystem.service.model.ReservedTicket;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,8 +60,23 @@ public class ReservedTicketService {
     }
 
     public ReservedTicket reserveTicket(ReservedTicket reservedTicket) {
-        // Your code here
-        return null;
+        //Check if concert exists
+        if (concertService.findByConcertId(reservedTicket.getConcertId()) == null){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Concert ID is invalid.");
+        }
+        //Create Reserved Ticket Record
+        ReserveTicketRecord reserveTicketRecord = new ReserveTicketRecord();
+        reserveTicketRecord.setConcertId(reservedTicket.getConcertId());
+        reserveTicketRecord.setTicketId(reservedTicket.getTicketId());
+        reserveTicketRecord.setDateOfReservation(reservedTicket.getDateOfReservation());
+
+        //Save reserved ticket
+        reservedTicketRepository.save(reserveTicketRecord);
+
+        //Add reservedTicket to Que
+        reservedTicketsQueue.add(reservedTicket);
+
+        return reservedTicket;
     }
 
     public ReservedTicket findByReserveTicketId(String reserveTicketId) {
@@ -78,8 +95,18 @@ public class ReservedTicketService {
     }
 
     public List<ReservedTicket> findByConcertId(String concertId) {
-        // Your code here
-        return null;
+        //Empty arraylist for reserved tickets
+        List<ReservedTicket> tickets = new ArrayList<>();
+
+        //Retrieve reserved ticket record list from repository
+        List<ReserveTicketRecord> records = reservedTicketRepository.findByConcertId(concertId);
+
+        //loop through record list, retrieve the reserved ticket object by id lookup,
+        // and add reserved tickets to reserved ticket array
+        for (ReserveTicketRecord record: records) {
+            tickets.add(findByReserveTicketId(record.getTicketId()));
+        }
+        return tickets;
     }
 
     public ReservedTicket updateReserveTicket(ReservedTicket reservedTicket) {

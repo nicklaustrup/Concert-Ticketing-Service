@@ -2,18 +2,24 @@ package com.kenzie.unit.four.ticketsystem.service;
 
 import com.kenzie.unit.four.ticketsystem.repositories.PurchaseTicketRepository;
 import com.kenzie.unit.four.ticketsystem.repositories.model.PurchasedTicketRecord;
+import com.kenzie.unit.four.ticketsystem.repositories.model.ReserveTicketRecord;
 import com.kenzie.unit.four.ticketsystem.service.model.PurchasedTicket;
+import com.kenzie.unit.four.ticketsystem.service.model.ReservedTicket;
+import jdk.vm.ci.meta.Local;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import static java.util.UUID.randomUUID;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class PurchasedTicketServiceTest {
     private PurchaseTicketRepository purchaseTicketRepository;
@@ -31,7 +37,61 @@ public class PurchasedTicketServiceTest {
      *  purchasedTicketService.purchaseTicket
      *  ------------------------------------------------------------------------ **/
 
-    // Write additional tests here
+    @Test
+    void purchaseTicket_successful() throws InterruptedException {
+        String concertId = randomUUID().toString();
+        String ticketId = randomUUID().toString();
+        String time = Clock.fixed(Instant.now(), ZoneId.systemDefault()).toString();
+
+        ReserveTicketRecord record = new ReserveTicketRecord();
+        record.setTicketId(ticketId);
+        record.setConcertId(concertId);
+        record.setDateOfReservation(time);
+        record.setDateReservationClosed(null);
+        record.setReservationClosed(null);
+        record.setPurchasedTicket(true);
+
+        ReservedTicket reservedTicket = new ReservedTicket(
+                record.getConcertId(),
+                record.getTicketId(),
+                record.getDateOfReservation(),
+                record.getReservationClosed(),
+                record.getDateReservationClosed(),
+                record.getPurchasedTicket());
+
+        reservedTicketService.reserveTicket(reservedTicket);
+
+        when(reservedTicketService.findByReserveTicketId(any())).thenReturn(reservedTicket);
+
+
+        PurchasedTicketRecord purchasedTicketRecord = new PurchasedTicketRecord();
+        purchasedTicketRecord.setTicketId(ticketId);
+        purchasedTicketRecord.setDateOfPurchase(LocalDateTime.now().toString());
+        purchasedTicketRecord.setConcertId(reservedTicket.getConcertId());
+        purchasedTicketRecord.setPricePaid(90.0);
+
+        ArgumentCaptor<PurchasedTicketRecord> recordCaptor = ArgumentCaptor.forClass(PurchasedTicketRecord.class);
+
+        // WHEN
+        purchasedTicketService.purchaseTicket(ticketId, 90.0);
+
+        // THEN
+        verify(purchaseTicketRepository).save(recordCaptor.capture());
+        PurchasedTicketRecord storedRecord = recordCaptor.getValue();
+
+        Assertions.assertNotNull(reservedTicket);
+        Assertions.assertEquals(storedRecord.getConcertId(), reservedTicket.getConcertId(), "The concert id matches");
+    }
+
+    @Test
+    void purchaseTicket_reservedTicketNull_throwsResponseStatusException(){
+        when(reservedTicketService.findByReserveTicketId(any())).thenReturn(null);
+
+        // WHEN
+        Assertions.assertThrows(ResponseStatusException.class,
+                ()-> purchasedTicketService.purchaseTicket(randomUUID().toString(), 90.0));
+    }
+
 
     /** ------------------------------------------------------------------------
      *  purchasedTicketService.findByConcertId

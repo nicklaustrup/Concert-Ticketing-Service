@@ -15,14 +15,12 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static java.util.UUID.randomUUID;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class ReservedTicketServiceTest {
 
@@ -105,7 +103,43 @@ public class ReservedTicketServiceTest {
      *  reservedTicketService.reserveTicket
      *  ------------------------------------------------------------------------ **/
 
-    // Write additional tests here
+    @Test
+    void reserveTicket_ticketsReserved(){
+        ReserveTicketRecord record = new ReserveTicketRecord();
+        record.setTicketId(randomUUID().toString());
+        record.setConcertId(randomUUID().toString());
+        record.setDateOfReservation("record2date");
+        record.setDateReservationClosed("closed2date");
+        record.setReservationClosed(true);
+        record.setPurchasedTicket(false);
+
+        ReservedTicket expectedTicket = new ReservedTicket(record.getConcertId(), record.getTicketId(), record.getDateOfReservation());
+
+        when(concertService.findByConcertId(any(String.class))).thenReturn(mock(Concert.class));
+
+        // WHEN
+        ReservedTicket actual = reservedTicketService.reserveTicket(expectedTicket);
+
+        // THEN
+        Assertions.assertNotNull(actual);
+        Assertions.assertEquals(record.getConcertId(), actual.getConcertId(), "The concert id matches");
+        Assertions.assertEquals(record.getDateOfReservation(), actual.getDateOfReservation(), "The reservation date matches");
+        verify(reservedTicketRepository).save(any());
+    }
+
+    @Test
+    void reserveTicket_invalidData_throwsResponseStatusException(){
+        ReservedTicket actual = new ReservedTicket(
+                "nonexistentConcert",
+                "mock(String.class)",
+                "mock(String.class)"
+        );
+
+        when(concertService.findByConcertId(any(String.class))).thenThrow(ResponseStatusException.class);
+
+        Assertions.assertThrows(ResponseStatusException.class,
+                ()-> reservedTicketService.reserveTicket(actual));
+    }
 
     /** ------------------------------------------------------------------------
      *  reservedTicketService.findByReserveTicketId
@@ -141,8 +175,54 @@ public class ReservedTicketServiceTest {
      *  reservedTicketService.findByConcertId
      *  ------------------------------------------------------------------------ **/
 
-    // Write additional tests here
+    @Test
+    void findByConcertId() {
+        //Record 1
+        String concertId = randomUUID().toString();
 
+        ReserveTicketRecord record1 = new ReserveTicketRecord();
+        record1.setTicketId(randomUUID().toString());
+        record1.setConcertId(concertId);
+        record1.setDateOfReservation("record2date");
+        record1.setDateReservationClosed("closed2date");
+        record1.setReservationClosed(true);
+        record1.setPurchasedTicket(false);
+
+        //Record2
+        ReserveTicketRecord record2 = new ReserveTicketRecord();
+        record2.setTicketId(randomUUID().toString());
+        record2.setConcertId(concertId);
+        record2.setDateOfReservation("record2date");
+        record2.setDateReservationClosed("closed2date");
+        record2.setReservationClosed(true);
+        record2.setPurchasedTicket(false);
+
+
+        List<ReserveTicketRecord> reserveTicketRecordList =  new ArrayList<>();
+        reserveTicketRecordList.add(record1);
+        reserveTicketRecordList.add(record2);
+
+        when(reservedTicketRepository.findByConcertId(any(String.class))).thenReturn(reserveTicketRecordList);
+        when(reservedTicketRepository.findById(record1.getTicketId())).thenReturn(Optional.of(record1));
+        when(reservedTicketRepository.findById(record2.getTicketId())).thenReturn(Optional.of(record1));
+
+        List<ReservedTicket> tickets = reservedTicketService.findByConcertId(concertId);
+
+        Assertions.assertNotNull(tickets, "List of Reserved Tickets should not be null");
+        Assertions.assertEquals(tickets.get(0).getConcertId(), record1.getConcertId(), "Concert IDs do not match");
+        Assertions.assertEquals(tickets.get(1).getConcertId(), record2.getConcertId(), "Concert IDs do not match");
+    }
+
+    @Test
+    void findByConcertId_returnsNull(){
+        String concertId = "";
+
+        when(reservedTicketRepository.findById(concertId)).thenReturn(null);
+
+        List<ReservedTicket> tickets = reservedTicketService.findByConcertId(concertId);
+
+        Assertions.assertEquals(tickets.size(), 0, "List of Reserved Tickets should be null");
+    }
     /** ------------------------------------------------------------------------
      *  reservedTicketService.updateReserveTicket
      *  ------------------------------------------------------------------------ **/

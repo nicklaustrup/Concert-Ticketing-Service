@@ -1,5 +1,6 @@
 package com.kenzie.unit.four.ticketsystem.config;
 
+import com.google.common.cache.CacheLoader;
 import com.kenzie.unit.four.ticketsystem.service.model.Concert;
 
 import com.google.common.cache.Cache;
@@ -11,7 +12,7 @@ public class CacheStore {
     private Cache<String, Concert> cache;
 
     public CacheStore(int expiry, TimeUnit timeUnit) {
-        // initalize the cache
+        // initialize the cache
         this.cache = CacheBuilder.newBuilder()
                 .expireAfterWrite(expiry, timeUnit)
                 .concurrencyLevel(Runtime.getRuntime().availableProcessors())
@@ -19,18 +20,16 @@ public class CacheStore {
     }
 
     public Concert get(String key) {
-        // Write your code here
-        // Retrieve and return the concert
-        return null;
+        return cache.getIfPresent(key);
     }
 
     public void evict(String key) {
-        // Write your code here
         // Invalidate/evict the concert from cache
+        cache.invalidate(key);
     }
 
     public void add(String key, Concert value) {
-        // Write your code here
         // Add concert to cache
+        cache.put(key, value);
     }
 }

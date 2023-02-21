@@ -6,6 +6,7 @@ import com.kenzie.unit.four.ticketsystem.controller.model.ConcertUpdateRequest;
 import com.kenzie.unit.four.ticketsystem.service.ConcertService;
 import com.kenzie.unit.four.ticketsystem.service.model.Concert;
 
+import org.checkerframework.checker.units.qual.C;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -100,6 +101,7 @@ public class ConcertController {
     @DeleteMapping("/{concertId}")
     public ResponseEntity deleteConcertById(@PathVariable("concertId") String concertId) {
         // Your code here
-        return null;
+        concertService.deleteConcert(concertId);
+        return ResponseEntity.noContent().build();
     }
 }
